@@ -13,7 +13,6 @@ function App() {
 	const [searchImg, setSearchImg] = useState(null);
 	const [pagination, setPagination] = useState(1);
 	const [imagesArray, setImagesArray] = useState([]);
-	const [error, setError] = useState('');
 	const [modalImgURL, setModalImgURL] = useState('');
 
 	useEffect(() => {
@@ -36,13 +35,12 @@ function App() {
 						`По запросу "${searchImg}" мы нашли ${data.totalHits} изображений`
 					);
 				}
-
 				setImagesArray(prevImages => [...prevImages, ...data.hits]);
 				setStatus('resolved');
 			});
 		} catch (error) {
-			setError(error);
 			setStatus('rejected');
+			onMessage('error', error.message);
 		}
 	}, [pagination, searchImg]);
 
@@ -77,10 +75,6 @@ function App() {
 	const onModalClose = () => {
 		setModalImgURL('');
 		setStatus('resolved');
-	};
-
-	const submitData = data => {
-		setImagesArray(data);
 	};
 
 	if (status === 'idle') {
