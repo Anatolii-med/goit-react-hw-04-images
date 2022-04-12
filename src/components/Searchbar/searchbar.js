@@ -1,58 +1,53 @@
 import React from 'react';
+import { useState } from 'react';
 import {
-    SearchbarHeader,
-    SearchForm,
-    SearchFormButton,
-    SearchFormButtonLabel,
-    SearchFormInput,
+	SearchbarHeader,
+	SearchForm,
+	SearchFormButton,
+	SearchFormButtonLabel,
+	SearchFormInput,
 } from './searchbar.styled';
 
-class SearchBar extends React.Component {
-    state = {
-        imageData: '',
-    };
+function SearchBar({ onSubmit, onError }) {
+	const [imageData, setImageData] = useState('');
 
-    componentDidUpdate(prevProps, prevState) {}
+	const onHandleInput = e => {
+		const { value } = e.target;
+		setImageData(value);
+	};
 
-    onHandleInput = e => {
-        const { value } = e.target;
-        this.setState({ imageData: value });
-    };
+	const onSubmitSearch = e => {
+		e.preventDefault();
 
-    onSubmitSearch = e => {
-        e.preventDefault();
+		if (imageData.trim() === '') {
+			return onError(
+				'warning',
+				'Введите в строку поиска какое изображение хотите найти'
+			);
+		}
 
-        if (this.state.imageData.trim() === '') {
-            return this.props.onError(
-                'warning',
-                'Введите в строку поиска какое изображение хотите найти'
-            );
-        }
+		onSubmit(imageData);
+		setImageData('');
+	};
 
-        this.props.onSubmit(this.state.imageData);
-        this.setState({ imageData: '', pagination: 1 });
-    };
+	return (
+		<SearchbarHeader>
+			<SearchForm onSubmit={onSubmitSearch}>
+				<SearchFormButton type="submit">
+					<SearchFormButtonLabel>Search</SearchFormButtonLabel>
+				</SearchFormButton>
 
-    render() {
-        return (
-            <SearchbarHeader>
-                <SearchForm onSubmit={this.onSubmitSearch}>
-                    <SearchFormButton type="submit">
-                        <SearchFormButtonLabel>Search</SearchFormButtonLabel>
-                    </SearchFormButton>
-
-                    <SearchFormInput
-                        type="text"
-                        autoComplete="off"
-                        autoFocus
-                        placeholder="Search images and photos"
-                        onChange={this.onHandleInput}
-                        value={this.state.imageData}
-                    />
-                </SearchForm>
-            </SearchbarHeader>
-        );
-    }
+				<SearchFormInput
+					type="text"
+					autoComplete="off"
+					autoFocus
+					placeholder="Search images and photos"
+					onChange={onHandleInput}
+					value={imageData}
+				/>
+			</SearchForm>
+		</SearchbarHeader>
+	);
 }
 
 export default SearchBar;
