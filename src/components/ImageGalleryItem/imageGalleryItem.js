@@ -1,17 +1,13 @@
 import React from 'react';
 import {
-    ImageGalleryItem,
-    ImageGalleryItemImage,
+	ImageGalleryItem,
+	ImageGalleryItemImage,
 } from './imageGalleryItem.styled';
 
-export default class Item extends React.Component {
-    render() {
-        const { largeImageURL, sours, altern, id, onClick } = this.props;
-
-        return (
-            <ImageGalleryItem key={id} onClick={() => onClick(largeImageURL)}>
-                <ImageGalleryItemImage src={sours} alt={altern} />
-            </ImageGalleryItem>
-        );
-    }
+export default function Item({ largeImageURL, sours, altern, id, onClick }) {
+	return (
+		<ImageGalleryItem key={id} onClick={() => onClick(largeImageURL)}>
+			<ImageGalleryItemImage src={sours} alt={altern} />
+		</ImageGalleryItem>
+	);
 }
