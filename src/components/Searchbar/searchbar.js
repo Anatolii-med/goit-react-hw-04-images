@@ -21,7 +21,7 @@ function SearchBar({ onSubmit, onError }) {
 
 		if (imageData.trim() === '') {
 			return onError(
-				'warning',
+				'error',
 				'Введите в строку поиска какое изображение хотите найти'
 			);
 		}

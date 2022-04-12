@@ -5,150 +5,132 @@ import SearchBar from './Searchbar/searchbar';
 import Button from './Button/button';
 import Spinner from './Loader/loader';
 import { Modal } from './Modal/modal';
-import Notiflix from 'notiflix';
+import toast, { Toaster } from 'react-hot-toast';
+import { useState, useEffect } from 'react';
 
-class App extends React.Component {
-    state = {
-        status: 'idle',
-        searchImg: null,
-        pagination: 1,
-        imagesArray: [],
-        error: '',
-        modalImgURL: '',
-    };
+function App() {
+	const [status, setStatus] = useState('idle');
+	const [searchImg, setSearchImg] = useState(null);
+	const [pagination, setPagination] = useState(1);
+	const [imagesArray, setImagesArray] = useState([]);
+	const [error, setError] = useState('');
+	const [modalImgURL, setModalImgURL] = useState('');
 
-    async componentDidUpdate(prevProps, prevState) {
-        const { searchImg, pagination } = this.state;
-        const searchImgPrev = prevState.searchImg;
-        const paginationPrev = prevState.pagination;
+	useEffect(() => {
+		if (!searchImg) {
+			return;
+		}
+		try {
+			fetchFunc(searchImg, pagination).then(data => {
+				if (data.total === 0) {
+					onMessage(
+						'error',
+						`Мы не смогли найти ваш запрос "${searchImg}"`
+					);
+					setStatus('rejected');
+					return;
+				}
+				if (pagination === 1) {
+					onMessage(
+						'success',
+						`По запросу "${searchImg}" мы нашли ${data.totalHits} изображений`
+					);
+				}
 
-        if (searchImgPrev !== searchImg || paginationPrev !== pagination) {
-            try {
-                const data = await fetchFunc(searchImg, pagination);
-                if (data.total === 0) {
-                    this.onMessage(
-                        'failure',
-                        `Мы не смогли найти ваш запрос "${searchImg}"`
-                    );
-                    this.setState({ status: 'rejected' });
-                    return;
-                }
+				setImagesArray(prevImages => [...prevImages, ...data.hits]);
+				setStatus('resolved');
+			});
+		} catch (error) {
+			setError(error);
+			setStatus('rejected');
+		}
+	}, [pagination, searchImg]);
 
-                if (pagination === 1) {
-                    this.onMessage(
-                        'success',
-                        `По запросу "${searchImg}" мы нашли ${data.totalHits} изображений`
-                    );
-                }
+	const onMessage = (type, message) => {
+		toast[type](message, { position: 'top-right' });
+	};
 
-                this.setState(prevState => ({
-                    imagesArray: [...prevState.imagesArray, ...data.hits],
-                    status: 'resolved',
-                }));
-            } catch (error) {
-                this.setState({ error, status: 'rejected' });
-            }
-        }
-    }
+	const resetPagination = () => {
+		setPagination(1);
+		setImagesArray([]);
+	};
 
-    onMessage = (type, message) => {
-        Notiflix.Notify[type](message);
-    };
+	const onSearchSubmit = searchValue => {
+		setSearchImg(searchValue);
+		setStatus('pending');
+		resetPagination();
+	};
 
-    resetPagination = () => {
-        this.setState({ pagination: 1, imagesArray: [] });
-    };
+	const updatePaginationPage = () => {
+		setPagination(prevState => prevState + 1);
+		window.scrollTo({
+			top: document.documentElement.scrollHeight,
+			behavior: 'smooth',
+		});
+	};
 
-    onSearchSubmit = searchValue => {
-        this.setState({ searchImg: searchValue, status: 'pending' });
-        this.resetPagination();
-    };
+	const onModalOpen = modalImgURL => {
+		setModalImgURL(modalImgURL);
+		setStatus('modal');
+	};
 
-    updatePaginationPage = () => {
-        this.setState(prevState => ({ pagination: prevState.pagination + 1 }));
-        window.scrollTo({
-            top: document.documentElement.scrollHeight,
-            behavior: 'smooth',
-        });
-    };
+	const onModalClose = () => {
+		setModalImgURL('');
+		setStatus('resolved');
+	};
 
-    onModalOpen = modalImgURL => {
-        this.setState({ modalImgURL: modalImgURL, status: 'modal' });
-        console.log('fullImgUrl :>> ', modalImgURL);
-    };
+	const submitData = data => {
+		setImagesArray(data);
+	};
 
-    onModalClose = () => {
-        this.setState({ modalImgURL: '', status: 'resolved' });
-    };
+	if (status === 'idle') {
+		return (
+			<>
+				<SearchBar onSubmit={onSearchSubmit} onError={onMessage} />
+				<Toaster />
+			</>
+		);
+	}
 
-    submitData = data => {
-        this.setState({ imagesArray: data });
-    };
+	if (status === 'pending') {
+		return (
+			<>
+				<SearchBar onSubmit={onSearchSubmit} onError={onMessage} />
+				<Spinner />
+				<Toaster />
+			</>
+		);
+	}
 
-    render() {
-        if (this.state.status === 'idle') {
-            return (
-                <>
-                    <SearchBar
-                        onSubmit={this.onSearchSubmit}
-                        onError={this.onMessage}
-                    />
-                </>
-            );
-        }
+	if (status === 'resolved') {
+		return (
+			<>
+				<SearchBar onSubmit={onSearchSubmit} onError={onMessage} />
+				<Gallery images={imagesArray} onItemClick={onModalOpen} />
+				<Button onClick={updatePaginationPage} />
+				<Toaster />
+			</>
+		);
+	}
 
-        if (this.state.status === 'pending') {
-            return (
-                <>
-                    <SearchBar
-                        onSubmit={this.onSearchSubmit}
-                        onError={this.onMessage}
-                    />
-                    <Spinner />
-                </>
-            );
-        }
-
-        if (this.state.status === 'resolved') {
-            return (
-                <>
-                    <SearchBar
-                        onSubmit={this.onSearchSubmit}
-                        onError={this.onMessage}
-                    />
-                    <Gallery
-                        images={this.state.imagesArray}
-                        onItemClick={this.onModalOpen}
-                    />
-                    <Button onClick={this.updatePaginationPage} />
-                </>
-            );
-        }
-
-        if (this.state.status === 'modal') {
-            return (
-                <>
-                    <SearchBar
-                        onSubmit={this.onSearchSubmit}
-                        onError={this.onMessage}
-                    />
-                    <Gallery images={this.state.imagesArray} />
-                    <Modal
-                        largeImageUrl={this.state.modalImgURL}
-                        onClose={this.onModalClose}
-                    />
-                </>
-            );
-        }
-        if (this.state.status === 'rejected') {
-            return (
-                <SearchBar
-                    onSubmit={this.onSearchSubmit}
-                    onError={this.onMessage}
-                />
-            );
-        }
-    }
+	if (status === 'modal') {
+		return (
+			<>
+				<SearchBar onSubmit={onSearchSubmit} onError={onMessage} />
+				<Gallery images={imagesArray} />
+				<Modal largeImageUrl={modalImgURL} onClose={onModalClose} />
+				<Toaster />
+			</>
+		);
+	}
+	if (status === 'rejected') {
+		return (
+			<>
+				<SearchBar onSubmit={onSearchSubmit} onError={onMessage} />;
+				<Toaster />;
+			</>
+		);
+	}
 }
 
 export default App;
