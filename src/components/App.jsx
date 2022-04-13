@@ -19,8 +19,10 @@ function App() {
 		if (!searchImg) {
 			return;
 		}
-		try {
-			fetchFunc(searchImg, pagination).then(data => {
+
+		async function FetchApi() {
+			try {
+				const data = await fetchFunc(searchImg, pagination);
 				if (data.total === 0) {
 					onMessage(
 						'error',
@@ -35,13 +37,15 @@ function App() {
 						`По запросу "${searchImg}" мы нашли ${data.totalHits} изображений`
 					);
 				}
+
 				setImagesArray(prevImages => [...prevImages, ...data.hits]);
 				setStatus('resolved');
-			});
-		} catch (error) {
-			setStatus('rejected');
-			onMessage('error', error.message);
+			} catch (error) {
+				setStatus('rejected');
+				onMessage('error', error.message);
+			}
 		}
+		FetchApi();
 	}, [pagination, searchImg]);
 
 	const onMessage = (type, message) => {
